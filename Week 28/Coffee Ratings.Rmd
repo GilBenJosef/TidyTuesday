@@ -1,0 +1,207 @@
+```{r Data and Packages Import}
+pacman::p_load('tidyverse', 'patchwork') # Packages import. 
+
+coffee_ratings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-07/coffee_ratings.csv')
+```
+
+```{r Gil Ben Josef's Visualization}
+pacman::p_load('ggridges', 'extrafont', 'png') # Relevant packages import.
+
+coffee_ratings <- coffee_ratings %>% 
+  mutate(processing_method = factor(processing_method, 
+                                    labels = c('Natural', 'Other', 'Pulped Natural', 'Semi Washed', 'Washed'))) # Change labels of methods.
+
+col <- c('#3e1e04', '#6a3005', '#965015', '#c4923e', '#cbac85') 
+col_rev <- c('#cbac85', '#c4923e', '#965015', '#6a3005', '#3e1e04')
+# Color vectors.
+
+darkbean <- readPNG('darkbean.png')
+db2 <- grid::rasterGrob(darkbean, interpolate = T) # Dark bean import.
+
+lightbean <- readPNG('lightbean.png')
+lb2 <- grid::rasterGrob(lightbean, interpolate = T) # Light bean import.
+# Both icons made by photo3idea_studio from flaticon.com. 
+
+p1 <- coffee_ratings %>% 
+  filter(processing_method!='NA') %>% 
+  ggplot(aes(total_cup_points, processing_method, 
+             fill = processing_method, color = processing_method)) + 
+  geom_density_ridges(alpha = 0.9) + xlim(60, 90) + 
+  scale_y_discrete(expand = c(0, 0)) + 
+  scale_fill_manual(values = col) +
+  scale_color_manual(values = col) +
+  labs(x = 'Total Points',
+       y = '', 
+       title = 'Total Points Distribution by Coffee Processing Methods \nVisualization: @GilBenJosef',
+       caption = 'Text: Wikipedia & Atlas Coffee | Icons: photo3idea_studio') + 
+  theme(text = element_text(family = 'Bahnschrift'), 
+        plot.title = element_text(face = 'bold', size = 20, hjust = 0.5),
+        plot.caption = element_text(size = 12, color = 'black'),
+        axis.title.x = element_text(face = 'bold', size = 16), 
+        axis.text.x = element_text(face = 'bold', size = 14, color = 'black'),
+        legend.position = 'none',
+        panel.background = element_rect(fill = 'white'),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.y = element_line(color = col),
+        axis.ticks = element_blank(), 
+        axis.text.y = element_blank(), 
+        axis.line.x = element_line(linetype = 1, color = 'black'), 
+        plot.margin = margin(0, 0, 1, 0, 'cm')) # Define theme.
+
+p1 <- p1 + annotate('text', 
+                    x = c(rep(88.6, 5)), 
+                    y = c(5.7, 4.6, 3.6, 2.6, 1.6),
+                    label = c('Washed', 'Semi Washed', 'Pulped Natural',
+                              'Other', 'Natural'), 
+                    family = 'Bahnschrift', fontface = 'bold', size = 8, color = col_rev) + 
+  annotate('text', 
+           x = c(rep(88.6, 5)), 
+           y = c(5.5, 4.4, 3.4, 2.4, 1.4), 
+           label = c('N = 815', 'N = 56', 'N = 14',
+                     'N = 26', 'N = 258'), 
+           family = 'Bahnschrift', size = 6, color = col_rev) # Annotate methods' names and sample sizes
+
+# Annotate Washed Description
+p1 <- p1 + annotate('text', 
+                    x = 69.5, y = 5.5, 
+                    label = "Also known as the Wet Method, in which the pulp is removed, and the \nbean is dried itself. Then, the beans go through water-filled fermentation \ntanks. Upon completion, the beans are rough, and they are ready for drying.", 
+                    family = 'Bahnschrift', size = 5, 
+                    color = '#cbac85') + 
+  annotation_custom(lb2, 
+                    xmin = 59, xmax = 61, 
+                    ymin = 4.75)
+
+# Annotate Semi Washed Description
+p1 <- p1 + annotate('text',
+                    x = 69, y = 4.5, 
+                    label = "There is no consensus about this processing method. It refers to a process by \nwhich only some portion of the pulp is removed. This process is common \nin smallholder farmers, like Indonesia, Central and South America.",
+                    family = 'Bahnschrift', size = 5, 
+                    color = '#c4923e')
+
+# Annotate Pulped Natural Description
+p1 <- p1 + annotate('text',
+                    x = 69, y = 3.5, 
+                    label = "Also known as Honey. During this process, the coffee cherry de-pulped like washed \ncoffee. However, the beans proceed directly to drying, and they don't go through \nfermentation. Pulped Natural coffee may exhibit greater body, acidity, and intensity.",
+                    family = 'Bahnschrift', size = 5, 
+                    color = '#965015')
+
+# Annotate Other Description
+p1 <- p1 + annotate('text',
+                    x = 69, y = 2.5, 
+                    label = "There are many other processing methods on the spectrum from Natural to Washed.",
+                    family = 'Bahnschrift', size = 5, 
+                    color = '#6a3005')
+
+# Annotate Natural Description
+p1 <- p1 + annotate('text',
+                    x = 70, y = 1.5,
+                    label = "Also known as the Dry Method. Simply put, cherries are spread on surfaces to \ndry in the sun. During the day, they're turned and during the night they're \ncovered. This process can take up to several weeks.", 
+                    family = 'Bahnschrift', size = 5, 
+                    color = '#3e1e04') +
+  annotation_custom(db2, 
+                    xmin = 58.7, xmax = 60.7, 
+                    ymin = -3.25)
+```
+
+```{r Ram Orr's Visualization}
+color_count <- coffee_ratings %>%
+  filter(!is.na(processing_method),
+         !is.na(color)) %>% 
+  select(processing_method, color) %>%
+  mutate(count = ifelse(!is.na(processing_method), 1, 0))
+
+colors <- scale_fill_manual(NULL, values = c('Green' = 'springgreen4',
+                                             'Bluish-Green' = 'seagreen3',
+                                             'Blue-Green' = 'lightseagreen',
+                                             'None' = 'grey74'))
+
+p2 <- color_count %>%
+  ggplot(aes(x = forcats::fct_infreq(processing_method), y = count, fill = color)) +
+  geom_bar(stat = 'identity', width = 0.7) +
+  colors + 
+  ggtitle('Coffee Bean Colors by Processing Method \nVisualization: @orr_ram') +
+  ylab('Count of Coffee Bean Types') +
+  xlab('') +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 780)) +
+  scale_x_discrete(expand = c(0, 0)) + 
+  coord_flip() + 
+  theme(text = element_text(family = 'Bahnschrift'),
+        plot.title = element_text(size = 20, hjust = 0.5, face = 'bold'),
+        axis.text.y = element_text(size = 14, face = 'bold',
+                                   color = c('#cbac85', '#3e1e04', '#c4923e', '#6a3005', '#965015')),
+        axis.text.x = element_text(size = 14, color = 'black', face = 'bold'),
+        axis.title = element_text(size = 16, face = 'bold'),
+        legend.text = element_text(size = 12),
+        legend.position = 'top',
+        panel.background = element_rect(fill = 'white'),
+        axis.ticks = element_blank(),
+        axis.line.x.bottom = element_line(linetype = 1),
+        axis.line.y.left = element_line(linetype = 1))
+
+# Annotations
+p2 <- p2 + annotate('text', 
+                    x = 4, y = 500,
+                    label = 'After processing, coffee beans mostly \nretain a green shade, but \nthere are some exceptions.',
+                    family = 'Bahnschrift', size = 5, 
+                    color = 'springgreen4') + 
+  annotate('curve', 
+           x = 3.2, xend = 1.5, y = 500, yend = 500, 
+           curvature = -.2, color = 'springgreen4', size = 0.75, 
+           arrow = arrow(length = unit(1.5, 'mm')))
+```
+
+```{r Elad Oz Cohen's Visualization}
+pacman::p_load('plotly')
+
+# Preprocessing
+coffee_farm <- coffee_ratings %>% 
+  select(country_of_origin,farm_name,total_cup_points) %>% 
+  na.omit() %>% 
+  filter(total_cup_points != 0) %>% 
+  group_by(country_of_origin) %>% 
+  mutate(var_total = as.factor(var(total_cup_points)),sum_farm = n()) %>% 
+  arrange(country_of_origin) %>% 
+  slice(1) %>% ungroup() %>% filter(var_total != 0)  
+
+coffee_farm <- coffee_farm[1:10, ]
+coffee_farm$fraction <- coffee_farm$sum_farm/sum(coffee_farm$sum_farm)
+coffee_farm$ymax <- cumsum(coffee_farm$fraction)
+coffee_farm$ymin <- c(0, head(coffee_farm$ymax, n = -1))
+coffee_farm$labelPosition <- (coffee_farm$ymax + coffee_farm$ymin)/2
+coffee_farm <- coffee_farm %>% 
+  arrange(desc(var_total))
+
+# Pre allocating colors and text properties
+fill = c('#B1723C', '#B7815B', '#8F7550',
+         '#9A744F', '#6F5735', '#6F5240',
+         '#9E6039', '#764620', '#78441D', 
+         '#693F17')
+ 
+t <- list(family = "Bahnschrift", size = 25, color = '#6F5240')
+ 
+# NOW THAT'S WHAT IM TALKING ABOUT!
+p3 <- plot_ly(data=coffee_farm,labels = ~country_of_origin,values = ~sum_farm, sort = TRUE,
+              textfont = list(color = 'white', size = 18, family = 'Bahnschrift'),
+              marker = list(colors = fill,
+                            textposition = 'inside')) %>%
+  add_pie(hole = 0.7) %>% 
+  layout(title = list(text = 'TOP 10 \n\nCount of Coffee Farms \nby Country \n\n@EladOzC',
+                      font = t,
+                      x = 0.5,
+                      y = 0.65),
+         xaxis = list(tickfont = list(size = 30)), 
+         yaxis = list(tickfont = list(size = 30)), 
+         showlegend = T,
+         legend = list(x = 0.9, y = 0.8, family = 'Bahnschrift'))
+
+p3
+```
+
+```{r Collage Export}
+fp <- p1 / p2 + plot_layout(ncol = 1, heights = c(2,1)) + 
+  labs(caption = 'Source: James LeDoux & Coffee Quality Institute') + 
+  theme(plot.caption = element_text(size = 12, color = 'black'))
+
+ggsave("final.png", fp, width = 14.5, height = 13 , dpi = 720)
+```
